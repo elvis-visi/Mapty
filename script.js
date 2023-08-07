@@ -15,6 +15,18 @@ const inputElevation = document.querySelector('.form__input--elevation');
 // 2 cbs, 1 on success and the other on error
 
 //Refactoring for Project Architecture
+class Workout {
+  date = new Date();
+  id = (Date.now() + '').slice(-10); //best to use a library
+
+  constructor(coords, distance, duration) {
+    this.coords = coords; // [lat,lng]
+    this.distance = distance; //in km
+    this.duration = duration; // in min
+  }
+}
+
+//Refactoring for Project Architecture
 class App {
   //Private instance properties.
   #map;
