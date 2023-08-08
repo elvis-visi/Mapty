@@ -90,11 +90,16 @@ class App {
 
   //constructor called immediately when a new object is created
   constructor() {
+    //Get user position
     this._getPosition();
+
+    //Get data from local storage
+    this._getLocalStorage();
+
     //event handler function will always have the this of the DOM element it is
     //attached to.
+    //Attach event handlers
     form.addEventListener('submit', this._newWorkout.bind(this));
-
     inputType.addEventListener('change', this._toggleElevationField);
     containerWorkouts.addEventListener('click', this._moveToPopup.bind(this));
   }
@@ -114,15 +119,15 @@ class App {
   _loadMap(position) {
     {
       const { latitude, longitude } = position.coords;
-      console.log(`https://www.google.com/maps/@${latitude},${longitude}`);
+      // console.log(`https://www.google.com/maps/@${latitude},${longitude}`);
 
       //map the id of the div where the map will be displayed
       // L -> namespace from Leaflet, which has methods which we can use
       const coords = [latitude, longitude];
 
-      console.log(`this`, this);
+      // console.log(`this`, this);
       this.#map = L.map('map').setView(coords, this.#mapZoomLevel);
-      console.log(this.#map);
+      // console.log(this.#map);
 
       // the map on the page is made up of small tiles, they come from
       //operstreetmap
@@ -135,6 +140,10 @@ class App {
       // event created lby leaflet
       //Handling clicks on map
       this.#map.on('click', this._showForm.bind(this));
+
+      this.#workouts.forEach(work => {
+        this._renderWorkoutMarker(work);
+      });
     }
   }
 
@@ -208,15 +217,18 @@ class App {
     //Add new object to workout array
     this.#workouts.push(workout);
     //Render workout on map as marker
-    this.renderWorkoutMarker(workout);
+    this._renderWorkoutMarker(workout);
     //Render workout on list
     this._renderWorkout(workout);
 
     //Hide form + Clear input fields
     this._hideForm();
+
+    // Set local storage to all workouts
+    this._setLocalStorage();
   }
 
-  renderWorkoutMarker(workout) {
+  _renderWorkoutMarker(workout) {
     L.marker(workout.coords)
       .addTo(this.#map)
       .bindPopup(
@@ -291,14 +303,14 @@ class App {
   // Move to Marker On Click
   _moveToPopup(e) {
     const workoutEl = e.target.closest('.workout');
-    console.log(workoutEl);
+    // console.log(workoutEl);
 
     if (!workoutEl) return;
 
     const workout = this.#workouts.find(
       work => work.id === workoutEl.dataset.id
     );
-    console.log(workout);
+    // console.log(workout);
     //coords and zoom level
     this.#map.setView(workout.coords, this.#mapZoomLevel, {
       animate: true,
@@ -308,7 +320,36 @@ class App {
     });
 
     //using public interface -> click
-    workout.click();
+    // workout.click();
+  }
+
+  //issue with using localStorage, when we converted the objects to a string
+  //and then the other way around, we lost the prototype chain
+
+  _setLocalStorage() {
+    //localStorage API, key value pair. Don't use for large amount of data
+    localStorage.setItem('workouts', JSON.stringify(this.#workouts));
+  }
+
+  _getLocalStorage() {
+    const data = JSON.parse(localStorage.getItem('workouts'));
+    // console.log(`local storage data`, data);
+
+    if (!data) return;
+
+    //restore our workout array
+    this.#workouts = data;
+
+    this.#workouts.forEach(work => {
+      this._renderWorkout(work);
+      //we are trying to add the marker at the beginning, however the map hasn't
+      //yet been loaded.
+    });
+  }
+
+  reset() {
+    localStorage.removeItem('workouts');
+    location.reload();
   }
 }
 
